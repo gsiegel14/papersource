@@ -1,0 +1,118 @@
+name: SDXL-Ultrasound-Finetune
+description: Fine-tune SDXL on pulse wave Doppler ultrasound images
+
+# Define the workflow inputs and parameters
+inputs:
+  dataset_id:
+    type: string
+    description: "ID of the dataset in Gradient"
+  output_dir:
+    type: string
+    default: "/artifacts/models"
+    description: "Output directory for model checkpoints"
+  training_steps:
+    type: integer
+    default: 2000
+    description: "Number of training steps"
+  batch_size:
+    type: integer
+    default: 1
+    description: "Batch size for training"
+  learning_rate:
+    type: float
+    default: 0.00001
+    description: "Learning rate for training"
+  save_interval:
+    type: integer
+    default: 200
+    description: "Interval for saving checkpoints"
+  generate_samples:
+    type: boolean
+    default: true
+    description: "Whether to generate samples after training"
+  evaluate_model:
+    type: boolean
+    default: true
+    description: "Whether to evaluate the model after training"
+
+# Define the workflow tasks
+tasks:
+  - name: setup
+    type: container
+    resources:
+      instance-type: P4000
+    container:
+      image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+      command:
+        - bash
+        - -c
+        - |
+          apt-get update && apt-get install -y git
+          git clone https://github.com/YOUR_GITHUB_USERNAME/sdxl-ultrasound.git /workspace
+          cd /workspace
+          pip install -r requirements.txt
+          # Update the config to use the Gradient dataset path
+          sed -i "s|dataset_path = .*|dataset_path = \"/datasets/${inputs.dataset_id}\"|g" configs/training_config.py
+          sed -i "s|max_train_steps = .*|max_train_steps = ${inputs.training_steps}|g" configs/training_config.py
+          sed -i "s|save_interval = .*|save_interval = ${inputs.save_interval}|g" configs/training_config.py
+          sed -i "s|train_batch_size = .*|train_batch_size = ${inputs.batch_size}|g" configs/training_config.py
+          sed -i "s|learning_rate = .*|learning_rate = ${inputs.learning_rate}|g" configs/training_config.py
+          sed -i "s|output_dir = .*|output_dir = \"${inputs.output_dir}\"|g" configs/training_config.py
+          
+  - name: train
+    type: container
+    needs: setup
+    resources:
+      instance-type: A4000  # Use A4000 or A5000 for SDXL
+    env:
+      WANDB_API_KEY: ${secrets.WANDB_API_KEY}
+    container:
+      image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+      command:
+        - bash
+        - -c
+        - |
+          cd /workspace
+          python src/train/train_sdxl.py --with_tracking --output_dir ${inputs.output_dir}
+    artifacts:
+      output:
+        type: dataset
+        path: ${inputs.output_dir}
+
+  - name: generate
+    type: container
+    needs: train
+    resources:
+      instance-type: A4000
+    condition: ${inputs.generate_samples}
+    container:
+      image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+      command:
+        - bash
+        - -c
+        - |
+          cd /workspace
+          python src/utils/generate_images.py --model_path ${inputs.output_dir}/final_unet_lora --generate_all --num_images 4
+    artifacts:
+      output:
+        type: dataset
+        path: /workspace/generated_images
+
+  - name: evaluate
+    type: container
+    needs: generate
+    resources:
+      instance-type: A4000
+    condition: ${inputs.evaluate_model}
+    container:
+      image: pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+      command:
+        - bash
+        - -c
+        - |
+          cd /workspace
+          python src/utils/evaluate_model.py --eval_type fid --real_data_dir /datasets/${inputs.dataset_id} --generated_data_dir /workspace/generated_images
+    artifacts:
+      output:
+        type: dataset
+        path: /workspace/fid_results.txt 

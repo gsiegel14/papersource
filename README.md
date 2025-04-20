@@ -149,4 +149,40 @@ For automated, reproducible training pipelines:
    ```bash
    gradient workflows run --id YOUR_WORKFLOW_ID \
        --input dataset_id=YOUR_DATASET_ID
-   ``` 
+   ```
+
+# VEXUS Dataset Upload to Gradient
+
+This repository contains tools to upload the VEXUS ultrasound dataset to Paperspace Gradient.
+
+## Prerequisites
+
+- Gradient CLI installed and configured
+- VEXUS dataset compressed as a tarball (`vexus_dataset.tar.gz`)
+
+## Upload Dataset to Gradient
+
+The `upload_dataset.py` script handles the creation and upload of the dataset to Gradient:
+
+```bash
+# Simple usage with defaults
+python upload_dataset.py
+
+# Custom usage with options
+python upload_dataset.py --name "my-vexus-dataset" --description "Custom description" --file_path "/path/to/vexus_dataset.tar.gz"
+```
+
+### Options
+
+- `--name`: Name for the dataset in Gradient (default: "vexus-dataset")
+- `--description`: Description for the dataset
+- `--file_path`: Path to the compressed dataset file (default: "/Users/gabe/vexus_dataset.tar.gz")
+- `--storage_provider`: Storage provider to use (default: "s3")
+
+## Additional Information
+
+The upload process occurs in two steps:
+1. Creating the dataset metadata in Gradient
+2. Uploading the dataset file to the specified storage provider
+
+Progress and confirmation messages will be displayed during the process. 

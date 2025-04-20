@@ -1,6 +1,6 @@
 # SDXL Fine-tuning for Pulse Wave Doppler Ultrasound Images
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/sdxl-ultrasound/blob/main/notebooks/train_sdxl_ultrasound.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/gsiegel14/sdxl-ultrasound/blob/main/notebooks/train_sdxl_ultrasound.ipynb)
 
 This project provides tools to fine-tune Stable Diffusion XL (SDXL) on pulse wave Doppler ultrasound images. The goal is to generate photorealistic images that are indistinguishable from real ultrasound data by radiologists.
 

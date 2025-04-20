@@ -48,7 +48,7 @@ tasks:
         - -c
         - |
           apt-get update && apt-get install -y git
-          git clone https://github.com/YOUR_GITHUB_USERNAME/sdxl-ultrasound.git /workspace
+          git clone https://github.com/gsiegel14/sdxl-ultrasound.git /workspace
           cd /workspace
           pip install -r requirements.txt
           # Update the config to use the Gradient dataset path
